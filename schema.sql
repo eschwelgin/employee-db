@@ -23,3 +23,4 @@ CREATE TABLE department (
     PRIMARY KEY(id)
 );
 
+INSERT INTO 
