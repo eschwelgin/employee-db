@@ -1,5 +1,6 @@
 const mysql = require('mysql')
 const inquirer = require('inquirer')
+const cTable = require('console.table')
 
 function choiceFn(choice) {
     switch (choice) {
@@ -25,7 +26,7 @@ function choiceFn(choice) {
             updateManager() 
             break;
         case "Exit":
-            console.log("exiting")
+            connection.end()
             break; 
         
         
@@ -35,15 +36,61 @@ function choiceFn(choice) {
 }
 
 function viewAll() {
-    console.log("Displaying All Employees")
-
-    mainMenu()
+    const sql = `SELECT employee.employee_id, employee.first_name, employee.last_name, department.dept_name, employee_role.title, employee_role.salary
+                FROM employee
+                LEFT JOIN employee_role ON employee.employee_role = employee_role.role_id
+                LEFT JOIN department ON employee_role.department_id = department.department_id
+                ORDER BY employee.employee_id ASC`
+    connection.query(sql, function (err, result) {
+        if (err) { console.log(err) 
+        } else {
+            console.table(result)
+            mainMenu()
+        }
+    })
 }
 
 function viewByDept() {
-    console.log("Displaying Employees by Department")
+    const sqlList = `SELECT * FROM department`
+    connection.query(sqlList, function (err, result) {
+        if (err) { console.log(err) 
+        } else {
+            // console.log(result)
+            let question = [{
+                type: "list",
+                message: "Which department would you like to view?",
+                name: "dept",
+                choices: result.map(result => result.dept_name)
+            }]
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                const sql = `SELECT employee.employee_id, employee.first_name, employee.last_name, department.dept_name, employee_role.title, employee_role.salary
+                            FROM employee
+                            LEFT JOIN employee_role ON employee.employee_role = employee_role.role_id
+                            LEFT JOIN department ON employee_role.department_id = department.department_id
+                            WHERE department.dept_name = "${answer.dept}"
+                            ORDER BY employee.employee_id ASC`
+                connection.query(sql, function (err, result) {
+                    if (err) { console.log(err) 
+                    } else {
+                        console.table(result)
+                        mainMenu()
+                    }
+                })
+            })
+        }
+    })
 
-    mainMenu()
+
+    // const sql = `` 
+    // connection.query(sql, function (err, result) {
+    //     if (err) {console.log(err)
+    //     } else {
+    //         console.log(result)
+    //         mainMenu()
+    //     }
+    // })
 }
 
 function viewByManager() {
@@ -128,6 +175,13 @@ function mainMenu() {
     })
 }
 
+const connection = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "toorTOOR11$$",
+    database: "employee_db"
+})
+
 function start() {
     console.log(`
              ---------------------------------------,
@@ -143,12 +197,16 @@ function start() {
    / /***/                              / /*****/ 
   / /*_*/_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ / /*****/
  /_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ /*****/
-|                                       |****/
+|                       lets hope so... |****/
 |                                       |***/
 |                                       |**/
-|                        lets hope so...|*/
-|---------------------------------------|/
+|                                       |*/
+|_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _|/
 `)
-mainMenu()
+    connection.connect(function(err) {
+        if (err) { console.log(err) }
+        // console.log('Connected to DB')
+    })
+    mainMenu()
 }
 start()
