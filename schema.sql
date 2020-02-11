@@ -65,3 +65,4 @@ LEFT JOIN employee_role ON employee.employee_role = employee_role.role_id
 LEFT JOIN department ON employee_role.department_id = department.department_id
 ORDER BY employee.employee_id ASC
 ;
+

@@ -81,22 +81,40 @@ function viewByDept() {
             })
         }
     })
-
-
-    // const sql = `` 
-    // connection.query(sql, function (err, result) {
-    //     if (err) {console.log(err)
-    //     } else {
-    //         console.log(result)
-    //         mainMenu()
-    //     }
-    // })
 }
 
 function viewByManager() {
-    console.log("view emp by manager")
-
-    mainMenu()
+    const sqlList = `SELECT employee.first_name, employee.last_name 
+                    FROM employee_role
+                    INNER JOIN employee ON employee_role.role_id = employee.employee_role
+                    WHERE employee_role.title = "lead developer" OR employee_role.title = "sales manager" OR employee_role.title = "customer support manager"`
+    connection.query(sqlList, function (err, result) {
+        if (err) { console.log(err) 
+        } else { 
+            let question = [{ 
+                type: "list",
+                message: "Who's employees would you like to view?",
+                name: "manager",
+                choices: result.map(result => result.first_name + ' ' + result.last_name)
+            }]
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                manager = answer.manager.split(' ')
+                const sql = `SELECT e.first_name, e.last_name
+                            FROM employee e
+                            INNER JOIN employee m ON m.employee_id = e.manager_id
+                            WHERE m.first_name = "${manager[0]}" AND m.last_name = "${manager[1]}";`
+                connection.query(sql, function (err, result) {
+                    if (err) { console.log(err) 
+                    } else {
+                        console.table(result)
+                        mainMenu()
+                    }
+                })
+            })
+        }
+    })
 }
 
 function addEmp() {
@@ -205,8 +223,9 @@ function start() {
 `)
     connection.connect(function(err) {
         if (err) { console.log(err) }
-        // console.log('Connected to DB')
+        console.log('Connected to DB')
+        mainMenu()
     })
-    mainMenu()
+    
 }
 start()
