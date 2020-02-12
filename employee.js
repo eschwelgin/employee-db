@@ -206,9 +206,26 @@ Employee ${answers.firstName} ${answers.lastName} inserted into database.
 }
 
 function addDept() {
-    console.log("add dept")
-
-    mainMenu()
+    const question = [{
+        type: "input",
+        message: "What department would you like to add?",
+        name: "dept"
+    }];
+    inquirer
+    .prompt(question)
+    .then(answer => {
+        const sql = `INSERT INTO department(dept_name)
+                VALUES ("${answer.dept}")`
+        connection.query(sql, function (err, result) {
+            if (err) {console.log(err)
+            } else {
+                console.log(`
+Added ${answer.dept} to the Department Table
+                `)
+                mainMenu()
+            }
+        })
+    })
 }
 
 function addRole() {
@@ -377,7 +394,7 @@ function mainMenu(sel) {
 const connection = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "toorTOOR11$$",
+    password: "toor", //TOOR11$$
     database: "employee_db"
 })
 
