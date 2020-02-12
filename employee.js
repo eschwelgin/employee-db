@@ -101,10 +101,13 @@ function viewByManager() {
             .prompt(question)
             .then(answer => {
                 manager = answer.manager.split(' ')
-                const sql = `SELECT e.first_name, e.last_name
-                            FROM employee e
-                            INNER JOIN employee m ON m.employee_id = e.manager_id
-                            WHERE m.first_name = "${manager[0]}" AND m.last_name = "${manager[1]}";`
+                const sql = `SELECT e.first_name, e.last_name, r.title, m.first_name manager_first_name, m.last_name manager_last_name-- , d.dept_name
+                FROM employee e
+                INNER JOIN employee m ON m.employee_id = e.manager_id
+                INNER JOIN employee_role r ON e.employee_role = r.role_id
+                -- INNER JOIN department d ON r.department_id = d.dept_name
+                WHERE m.first_name = "${manager[0]}" AND m.last_name = "${manager[1]}"
+                ;`
                 connection.query(sql, function (err, result) {
                     if (err) { console.log(err) 
                     } else {
@@ -118,34 +121,63 @@ function viewByManager() {
 }
 
 function addEmp() {
-    const questions = [
-        {
-            type: "input",
-            message: "What is the employee's first name?",
-            name: "firstName"
-        }, 
-        {
-            type: "input",
-            message: "What is the employee's last name?",
-            name: "lastName"
-        },
-        {
-            type: "list",
-            message: "What is the employee's role?",
-            name: "empRole",
-            choices: ["map fn"]
-        }, 
-        {
-            type: "list", 
-            message: "Who is the employee's manager?",
-            name: "empManager",
-            choices: ["map fn"]
+    const sqlRole = `SELECT * FROM employee_role`
+    connection.query(sqlRole, function (err, resultRole) {
+        if (err) { console.log(err) 
+    } else {
+            const role = resultRole
+            const sqlManager = `SELECT employee.first_name, employee.last_name, employee_id
+                                FROM employee_role
+                                INNER JOIN employee ON employee_role.role_id = employee.employee_role
+                                WHERE employee_role.title = "lead developer" OR employee_role.title = "sales manager" OR employee_role.title = "customer support manager"`
+            connection.query(sqlManager, function (err, resultManager) {
+                if (err) {console.log(err) 
+                } else {
+                    const manager = resultManager
+                    const questions = [
+                        {
+                            type: "input",
+                            message: "What is the employee's first name?",
+                            name: "firstName"
+                        }, 
+                        {
+                            type: "input",
+                            message: "What is the employee's last name?",
+                            name: "lastName"
+                        },
+                        {
+                            type: "list",
+                            message: "What is the employee's role?",
+                            name: "empRole",
+                            choices: role.map(role => role.title)
+                        }, 
+                        {
+                            type: "list", 
+                            message: "Who is the employee's manager?",
+                            name: "empManager",
+                            choices: manager.map(manager => manager.first_name + ' ' + manager.last_name)
+                        }
+                    ];
+                    inquirer
+                    .prompt(questions)
+                    .then(answers => {
+                        answer3 = role.find(role => role.title == answers.empRole) //role_id.
+                        managerArray = answers.empManager.split(' ')
+                        answer4 = manager.find(manager => manager.first_name == managerArray[0] && manager.last_name == managerArray[1])
+                        const sqlInsert = `INSERT INTO employee(first_name, last_name, employee_role, manager_id)
+                                            VALUES ("${answers.firstName}", "${answers.lastName}", "${answer3.role_id}", "${answer4.employee_id}")`
+                        connection.query(sqlInsert, function (err, result) {
+                            if (err) {console.log(err) 
+                            } else {
+                                console.log(`Employee ${answers.firstName} ${answers.lastName} inserted into database.`)
+                                mainMenu()
+                            }
+                        })
+
+                    })
+                }
+            })
         }
-    ];
-    inquirer
-    .prompt(questions)
-    .then(answers => {
-        console.log(answers)
     })
 }
 
