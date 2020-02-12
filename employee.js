@@ -25,6 +25,9 @@ function choiceFn(choice) {
         case "Update Employee Manager": 
             updateManager() 
             break;
+        case "View Total Spend by Department":
+            totalSpend()
+            break;
         case "Exit":
             connection.end()
             break; 
@@ -199,6 +202,41 @@ function updateManager() {
     mainMenu()
 }
 
+function totalSpend() {
+    const sql = `SELECT * FROM department`
+    connection.query(sql, function (err, result) {
+        if (err) { console.log(err)
+        } else {
+            const question = [{
+                type: "list", 
+                message: "For what department would you like to view total spend?",
+                name: "deptList", 
+                choices: result.map(result => result.dept_name)
+            }];
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                const sqlSpend = `SELECT * 
+                                FROM employee e
+                                LEFT JOIN employee_role r ON r.role_id = e.employee_role
+                                LEFT JOIN department d ON d.department_id = r.department_id
+                                WHERE dept_name = "${answer.deptList}"`
+                connection.query(sqlSpend, function (err, result) {
+                    if (err) {console.log(err)
+                    } else {
+                        let salary = result.map(result => result.salary)
+                        let total = salary.reduce(function (acc, cur) {
+                            return acc + cur
+                        }, 0)
+                        console.log(`The ${answer.deptList} department is currently spending ${total}`)
+                        mainMenu()
+                    }
+                })
+            })
+        }
+    })
+}
+
 function mainMenu() {
     const questions = [
         {
@@ -211,6 +249,7 @@ function mainMenu() {
                 "View Employees by Manager",
                 "Add Employee",
                 "Remove Employee", 
+                "View Total Spend by Department",
                 "Update Employee Role",
                 "Update Employee Manager", 
                 "Exit"
