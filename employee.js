@@ -4,6 +4,22 @@ const cTable = require('console.table')
 
 function choiceFn(choice) {
     switch (choice) {
+
+        case "View": 
+            mainMenu('View')
+            break;
+        case "Add": 
+            mainMenu('Add')
+            break;
+        case "Remove": 
+            mainMenu('Remove')
+            break;
+        case "Update": 
+            mainMenu('Update')
+            break;
+        case "Back": 
+            mainMenu()
+            break;
         case "View All Employees": 
             viewAll()
             break;
@@ -28,11 +44,15 @@ function choiceFn(choice) {
         case "View Total Spend by Department":
             totalSpend()
             break;
+        case "Add Department":
+            addDept()
+            break;
+        case "Add Employee Role":
+            addRole()
+            break;
         case "Exit":
             connection.end()
-            break; 
-        
-        
+            break;
         default: 
             console.log("defaulting, probably an error")
     }
@@ -172,16 +192,29 @@ function addEmp() {
                         connection.query(sqlInsert, function (err, result) {
                             if (err) {console.log(err) 
                             } else {
-                                console.log(`Employee ${answers.firstName} ${answers.lastName} inserted into database.`)
+                                console.log(`
+Employee ${answers.firstName} ${answers.lastName} inserted into database.
+                                `)
                                 mainMenu()
                             }
                         })
-
                     })
                 }
             })
         }
     })
+}
+
+function addDept() {
+    console.log("add dept")
+
+    mainMenu()
+}
+
+function addRole() {
+    console.log("add Role")
+
+    mainMenu()
 }
 
 function removeEmp() {
@@ -228,7 +261,9 @@ function totalSpend() {
                         let total = salary.reduce(function (acc, cur) {
                             return acc + cur
                         }, 0)
-                        console.log(`The ${answer.deptList} department is currently spending ${total}`)
+                        console.log(`
+The ${answer.deptList} department is currently spending $${total}/yr
+                        `)
                         mainMenu()
                     }
                 })
@@ -237,8 +272,22 @@ function totalSpend() {
     })
 }
 
-function mainMenu() {
-    const questions = [
+function mainMenu(sel) {
+    const questionsMain = [
+        {
+            type: "list",
+            message: "What Would You Like to Do?",
+            name: "mainList",
+            choices: [
+                "View",
+                "Add",
+                "Remove", 
+                "Update",
+                "Exit"
+            ]
+        }
+    ];
+    const questionsView = [
         {
             type: "list",
             message: "What Would You Like to Do?",
@@ -247,21 +296,82 @@ function mainMenu() {
                 "View All Employees",
                 "View Employees by Department",
                 "View Employees by Manager",
-                "Add Employee",
-                "Remove Employee", 
                 "View Total Spend by Department",
-                "Update Employee Role",
-                "Update Employee Manager", 
+                "Back",
                 "Exit"
             ]
         }
     ];
-    inquirer
-    .prompt(questions)
-    .then(answers => {
-        // console.log(answers.mainList)
-        choiceFn(answers.mainList)
-    })
+    const questionsAdd = [
+        {
+            type: "list",
+            message: "What Would You Like to Do?",
+            name: "mainList",
+            choices: [
+                "Add Employee",
+                "Add Department",
+                "Add Employee Role",
+                "Back",
+                "Exit"
+            ]
+        }
+    ];
+    const questionsRemove = [
+        {
+            type: "list",
+            message: "What Would You Like to Do?",
+            name: "mainList",
+            choices: [
+                "Remove Employee",
+                "Back",
+                "Exit"
+            ]
+        }
+    ];
+    const questionsUpdate = [
+        {
+            type: "list",
+            message: "What Would You Like to Do?",
+            name: "mainList",
+            choices: [
+                "Update Employee Role",
+                "Update Employee Manager", 
+                "Back",
+                "Exit"
+            ]
+        }
+    ];
+    if (sel === 'View') {
+        inquirer
+        .prompt(questionsView)
+        .then(answers => {
+            choiceFn(answers.mainList)
+        })
+    } else if (sel === 'Add') {
+        inquirer
+        .prompt(questionsAdd)
+        .then(answers => {
+            choiceFn(answers.mainList)
+        })
+    } else if (sel === 'Remove') {
+        inquirer
+        .prompt(questionsRemove)
+        .then(answers => {
+            choiceFn(answers.mainList)
+        })
+    } else if (sel === 'Update') {
+        inquirer
+        .prompt(questionsUpdate)
+        .then(answers => {
+            choiceFn(answers.mainList)
+        })
+    } else {
+        inquirer
+        .prompt(questionsMain)
+        .then(answers => {
+            choiceFn(answers.mainList)
+        })
+    }
 }
 
 const connection = mysql.createConnection({
