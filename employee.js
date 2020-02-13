@@ -78,7 +78,6 @@ function viewByDept() {
     connection.query(sqlList, function (err, result) {
         if (err) { console.log(err) 
         } else {
-            // console.log(result)
             let question = [{
                 type: "list",
                 message: "Which department would you like to view?",
@@ -107,10 +106,9 @@ function viewByDept() {
 }
 
 function viewByManager() {
-    const sqlList = `SELECT employee.first_name, employee.last_name 
-                    FROM employee_role
-                    INNER JOIN employee ON employee_role.role_id = employee.employee_role
-                    WHERE employee_role.title = "lead developer" OR employee_role.title = "sales manager" OR employee_role.title = "customer support manager"`
+    const sqlList = `SELECT DISTINCT m.employee_id, m.first_name, m.last_name
+                    FROM employee e
+                    INNER JOIN employee m ON m.employee_id = e.manager_id;`
     connection.query(sqlList, function (err, result) {
         if (err) { console.log(err) 
         } else { 
@@ -149,10 +147,9 @@ function addEmp() {
         if (err) { console.log(err) 
     } else {
             const role = resultRole
-            const sqlManager = `SELECT employee.first_name, employee.last_name, employee_id
-                                FROM employee_role
-                                INNER JOIN employee ON employee_role.role_id = employee.employee_role
-                                WHERE employee_role.title = "lead developer" OR employee_role.title = "sales manager" OR employee_role.title = "customer support manager"`
+            const sqlManager = `SELECT DISTINCT m.employee_id, m.first_name, m.last_name
+                                FROM employee e
+                                INNER JOIN employee m ON m.employee_id = e.manager_id;`
             connection.query(sqlManager, function (err, resultManager) {
                 if (err) {console.log(err) 
                 } else {
@@ -195,7 +192,7 @@ function addEmp() {
                                 console.log(`
 Employee ${answers.firstName} ${answers.lastName} inserted into database.
                                 `)
-                                mainMenu()
+                                mainMenu('Add')
                             }
                         })
                     })
@@ -222,7 +219,7 @@ function addDept() {
                 console.log(`
 Added ${answer.dept} to the Department Table
                 `)
-                mainMenu()
+                mainMenu('Add')
             }
         })
     })
@@ -264,7 +261,7 @@ function addRole() {
                             console.log(`
 Added ${answers.role} to ${department.dept_name} table
                             `)
-                            mainMenu()
+                            mainMenu('Add')
                         }
                     })
                 })
@@ -274,21 +271,148 @@ Added ${answers.role} to ${department.dept_name} table
 }
 
 function removeEmp() {
-    console.log("rem emp")
-
-    mainMenu()
+    const sqlEmp = `SELECT employee.employee_id, employee.first_name, employee.last_name, department.dept_name, employee_role.title, employee_role.salary
+                    FROM employee
+                    LEFT JOIN employee_role ON employee.employee_role = employee_role.role_id
+                    LEFT JOIN department ON employee_role.department_id = department.department_id
+                    ORDER BY employee.employee_id ASC`
+    connection.query(sqlEmp, function (err, result) {
+        if (err) {console.log(err) 
+        } else {
+            console.log('')
+            console.table(result)
+            const question = [{
+                type: "list",
+                message: "Which employee would you like to delete?",
+                name: "empList",
+                choices: result.map(result => result.first_name + ' ' + result.last_name)
+            }]
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                name = answer.empList.split(' ')
+                empObj = result.find(result => result.first_name === name[0] && result.last_name === name[1])
+                console.log(empObj.employee_id)
+                const sqlDel = `DELETE FROM employee
+                                WHERE employee_id = ${empObj.employee_id};`
+                console.log(sqlDel)
+                connection.query(sqlDel, function (err, result) {
+                    if (err) { console.log(err) 
+                    } else {
+                        console.log(`Deleted employee ${name[0]} ${name[1]} from employee database`)
+                        mainMenu()
+                    }
+                })
+            })
+        }
+    })
 }
 
 function updateRole() {
-    console.log("updating role")
-
-    mainMenu()
+    sqlList = `SELECT * FROM employee_role`
+    connection.query(sqlList, function (err, result) {
+        if (err) {console.log(err)
+        } else {
+            const question = [{
+                type: "list",
+                message: "Which employee role would you like to update?",
+                name: "role",
+                choices: result.map(result => result.title)
+            }]
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                const questions = [
+                    {
+                        type: "input",
+                        message: `Updating title for ${answer.role} - Please enter new title`,
+                        name: "newTitle"
+                    },
+                    {
+                        type: "input",
+                        message: `Updating salary for ${answer.role} - Please enter new salary`,
+                        name: "newSalary"
+                    }
+                ]
+                const roleObj = result.find(result => result.title === answer.role)
+                inquirer
+                .prompt(questions)
+                .then(answers => {
+                    const sqlUpdate = `UPDATE employee_role
+                                        SET title = "${answers.newTitle}",
+                                            salary = ${answers.newSalary}
+                                        WHERE role_id = ${roleObj.role_id};`
+                    connection.query(sqlUpdate, function (err, result) {
+                        if (err) {console.log(err) 
+                        } else {
+                            console.log(`
+${roleObj.title} updated to ${answers.newTitle} and $${answers.newSalary}
+                            `)
+                            mainMenu('Update')
+                        }
+                    })
+                })
+            })
+        }
+    })
 }
 
 function updateManager() {
-    console.log("updating manager")
-
-    mainMenu()
+    const sqlEmp = `SELECT employee.employee_id, employee.first_name, employee.last_name, department.dept_name, employee_role.title
+                    FROM employee
+                    LEFT JOIN employee_role ON employee.employee_role = employee_role.role_id
+                    LEFT JOIN department ON employee_role.department_id = department.department_id
+                    ORDER BY employee.employee_id ASC;`
+    const sqlManager = `SELECT DISTINCT m.employee_id, m.first_name manager_first_name, m.last_name manager_last_name
+                        FROM employee e
+                        INNER JOIN employee m ON m.employee_id = e.manager_id;`
+    connection.query(sqlEmp, function (err, empList) {
+        if (err) {console.log(err)
+        } else {
+            connection.query(sqlManager, function (err, managerList) {
+                if (err) {console.log(err) 
+                } else {
+                    console.table(empList)
+                    const questions = [
+                        {
+                            type: "list",
+                            message: "Select employee who is being updated",
+                            name: "empChoice",
+                            choices: empList.map(empList => empList.first_name + ' ' + empList.last_name)
+                        },
+                        {
+                            type: "list",
+                            message: "Which manager will that employee be reporting to?",
+                            name: "managerChoice",
+                            choices: managerList.map(managerList => managerList.manager_first_name + ' ' + managerList.manager_last_name)
+                        }
+                    ]
+                    inquirer
+                    .prompt(questions)
+                    .then(answers => {
+                        employee = answers.empChoice.split(' ')
+                        employee1 = empList.find(empList => empList.first_name === employee[0] && empList.last_name === employee[1])
+                        // console.log(employee1.employee_id)
+                        manager = answers.managerChoice.split(' ')
+                        manager1 = managerList.find(managerList => managerList.manager_first_name === manager[0] && managerList.manager_last_name === manager[1])
+                        // console.log(manager1.employee_id)
+                        const sqlUpdate = `UPDATE employee
+                                                SET manager_id = ${manager1.employee_id}
+                                            WHERE employee_id = ${employee1.employee_id};`
+                        connection.query(sqlUpdate, function (err, result) {
+                            if (err) {console.log(err)
+                            } else {
+                                console.log(`
+Updated Employee ${answers.empChoice} to report to ${answers.managerChoice} starting immidiately
+                                `)
+                                mainMenu('Update')
+                            }
+                        })
+                    })
+                }
+            })
+        }
+    })
 }
 
 function totalSpend() {
@@ -313,10 +437,9 @@ function totalSpend() {
                 connection.query(sqlSpend, function (err, result) {
                     if (err) {console.log(err)
                     } else {
-                        let salary = result.map(result => result.salary)
-                        let total = salary.reduce(function (acc, cur) {
+                        let total = result.map(result => result.salary).reduce(function (acc, cur) {
                             return acc + cur
-                        }, 0)
+                            }, 0)
                         console.log(`
 The ${answer.deptList} department is currently spending $${total}/yr
                         `)
