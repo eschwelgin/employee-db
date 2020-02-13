@@ -229,7 +229,42 @@ Added ${answer.dept} to the Department Table
 }
 
 function addRole() {
-    console.log("add Role")
+    const sqlDept = `SELECT * FROM department`
+    connection.query(sqlDept, function(err, result) {
+        if (err) {console.log(err) 
+        } else {
+            const question = [{
+                type: "list",
+                message: "What department would you like to add an employee role to?",
+                name: "dept",
+                choices: result.map(result => result.dept_name)
+            }]
+            inquirer
+            .prompt(question)
+            .then(answer => {
+                console.log(answer)
+                const questions = [{
+                    type: "input",
+                    message: `What employee role would you like to add to ${answer.dept}?`,
+                    name: "role"
+                },
+                {
+                   type: "input",
+                   message: "What is the salary for this poition? (enter numbers only)",
+                   name: "salary" 
+                }]
+                inquirer
+                .prompt(questions)
+                .then(answers => {
+                    // console.log(answer.role, answer.salary)
+                    department = result.find(result => result.dept_name === answer.dept)
+                    const sqlInsert = `INSERT INTO employee_role(title, salary, dept_id)
+                                        VALUES ("${answers.role}", "${answers.salary}", ${department.department_id})`
+                    console.log(sqlInsert)
+                })
+            })
+        }
+    })
 
     mainMenu()
 }
