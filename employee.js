@@ -242,7 +242,6 @@ function addRole() {
             inquirer
             .prompt(question)
             .then(answer => {
-                console.log(answer)
                 const questions = [{
                     type: "input",
                     message: `What employee role would you like to add to ${answer.dept}?`,
@@ -256,17 +255,22 @@ function addRole() {
                 inquirer
                 .prompt(questions)
                 .then(answers => {
-                    // console.log(answer.role, answer.salary)
                     department = result.find(result => result.dept_name === answer.dept)
-                    const sqlInsert = `INSERT INTO employee_role(title, salary, dept_id)
-                                        VALUES ("${answers.role}", "${answers.salary}", ${department.department_id})`
-                    console.log(sqlInsert)
+                    const sqlInsert = `INSERT INTO employee_role(title, salary, department_id)
+                                        VALUES ("${answers.role}", ${answers.salary}, ${department.department_id})`
+                    connection.query(sqlInsert, function (err, result) {
+                        if (err) {console.log(err)
+                        } else {
+                            console.log(`
+Added ${answers.role} to ${department.dept_name} table
+                            `)
+                            mainMenu()
+                        }
+                    })
                 })
             })
         }
     })
-
-    mainMenu()
 }
 
 function removeEmp() {
@@ -429,7 +433,7 @@ function mainMenu(sel) {
 const connection = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "toor", //TOOR11$$
+    password: "toorTOOR11$$", //
     database: "employee_db"
 })
 
